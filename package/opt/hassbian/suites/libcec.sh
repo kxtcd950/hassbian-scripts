@@ -9,7 +9,7 @@ function libcec-show-long-info {
 }
 
 function libcec-show-copyright-info {
-    echo "Copyright(c) 2017 Fredrik Lindqvist <https://github.im/Landrash>"
+    echo "Copyright(c) 2017 Fredrik Lindqvist <https://github.com/Landrash>"
 }
 
 function libcec-install-package {
@@ -18,12 +18,12 @@ libcec-show-copyright-info
 
 if [ "$(id -u)" != "0" ]; then
    echo "This script must be run with sudo. Use \"sudo ${0} ${*}\"" 1>&2
-   exit 1
+   return 1
 fi
 
 echo "Running apt-get preparation"
 apt-get update
-apt-get install -y cmake libudev-dev libxrandr-dev python-dev swig
+apt-get install -y cmake libudev-dev libxrandr-dev swig
 
 echo "Changing to homeassistant user"
 sudo -u homeassistant -H /bin/bash <<EOF
@@ -47,6 +47,7 @@ EOF
 echo "Installing Pulse-Eight platform"
 cd /srv/homeassistant/src/platform/build
 sudo make install
+sudo ldconfig
 
 echo "Changing back to homeassistant user"
 sudo -u homeassistant -H /bin/bash <<EOF
@@ -69,16 +70,20 @@ sudo make install
 sudo ldconfig
 
 echo "Linking libcec to venv site packages"
-sudo -u homeassistant ln -s /usr/local/lib/python3.*/site-packages/cec /srv/homeassistant/lib/python3.*/site-packages/
+PYTHONVER=$(ls /usr/local/lib/ | grep python | tail -1)
+sudo -u homeassistant -H /bin/bash <<EOF
+ln -s /usr/local/lib/$PYTHONVER/dist-packages/cec /srv/homeassistant/lib/$PYTHONVER/site-packages/
+EOF
 
 echo
 echo "Installation done."
 echo
-echo "If you have issues with this script, please contact @Landrash on gitter.im"
+echo "If you have issues with this script, please say something in the #devs_hassbian channel on Discord."
 echo
 echo "To continue have a look at https://home-assistant.io/components/hdmi_cec/"
 echo "It's recomended that you restart your Pi before continuing with testing libcec."
 echo
+return 0
 }
 
-[[ $_ == $0 ]] && echo "hassbian-config helper script; do not run directly, use hassbian-config install instead"
+[[ $_ == $0 ]] && echo "hassbian-config helper script; do not run directly, use hassbian-config instead"
